@@ -1,0 +1,52 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-svq
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./ollama/data:/root/.ollama
+      - ./ollama/init:/init
+    environment:
+      - OLLAMA_KEEP_ALIVE=-1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    entrypoint: [ "/bin/sh", "/init/run_ollama.sh" ]
+
+  backend-quarkus:
+    profiles: [ "quarkus" ]
+    build:
+      context: ./backend-quarkus/
+    container_name: backend-quarkus-svq
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=http://ollama-svq:11434
+      - QUARKUS_LANGCHAIN4J_OLLAMA_BASE-URL=http://ollama-svq:11434
+    ports:
+      - "8080:8080"
+
+  backend-spring:
+    profiles: [ "spring" ]
+    build:
+      context: ./backend-spring/
+    container_name: backend-spring-svq
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=http://ollama-svq:11434
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend-svq
+    ports:
+      - "3000:3000"

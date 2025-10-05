@@ -1,3 +1,16 @@
+# Spring vs. Quarkus
+
+## Spring
+Start framework:
+```
+docker compose --profile spring up
+```
+## Quarkus
+Start framework:
+```
+docker compose --profile quarkus up
+```
+
 ```mermaid
 flowchart TD
     subgraph DockerCompose["Docker Compose (profiles)"]
