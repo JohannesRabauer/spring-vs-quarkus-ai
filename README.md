@@ -15,7 +15,7 @@ docker compose --profile quarkus up
 flowchart TD
     subgraph DockerCompose["Docker Compose (profiles)"]
         subgraph Frontend["Frontend"]
-            NextJS["Next.js App"]
+            Spring["Vaadin App"]
         end
 
         subgraph Backend["Backend (choose profile)"]
