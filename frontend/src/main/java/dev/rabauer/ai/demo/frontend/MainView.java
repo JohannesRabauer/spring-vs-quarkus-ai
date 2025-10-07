@@ -1,5 +1,6 @@
 package dev.rabauer.ai.demo.frontend;
 
+import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -35,12 +36,10 @@ public class MainView extends VerticalLayout {
         chatResponse.setHeight("100%");
         chatResponse.setReadOnly(true);
         Button chatButton = new Button("Send", e -> {
-            chatResponse.setValue(
-                    "You said: " + chatInput.getValue() + "\n" +
-                            chat(chatInput.getValue())
-            );
+            chatResponse.setValue(chat(chatInput.getValue()));
         });
         chatButton.setWidthFull();
+        chatInput.addKeyPressListener(Key.ENTER, e -> chatButton.click());
 
         chatLayout.add(chatTitle, chatInput, chatButton, chatResponse);
 
@@ -66,11 +65,11 @@ public class MainView extends VerticalLayout {
         translateResponse.setReadOnly(true);
         Button translateButton = new Button("Translate", e -> {
             translateResponse.setValue(
-                    "Translated text for: " + translateInput.getValue() + "\n" +
-                            translate(translateLanguage.getValue(), translateInput.getValue())
+                    translate(translateLanguage.getValue(), translateInput.getValue())
             );
         });
         translateButton.setWidthFull();
+        translateInput.addKeyPressListener(Key.ENTER, e -> translateButton.click());
 
         translateLayout.add(translateTitle, horizontalTranslateLayout, translateButton, translateResponse);
 
@@ -92,11 +91,12 @@ public class MainView extends VerticalLayout {
     private String translate(String languageToTranslateTo, String textToTranslate) {
         return buildRestClient()
                 .post()
-                .uri("/translate")
+                .uri("/translate/" + languageToTranslateTo)
                 .body(textToTranslate)
                 .retrieve()
                 .body(String.class);
     }
+
 
     private String chat(String chatMessage) {
         return buildRestClient()
