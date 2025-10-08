@@ -15,6 +15,8 @@ docker compose --profile quarkus up
 
 After starting up the frontend is available at [http://localhost:8081](http://localhost:8081).
 
+## Architecture 
+
 ```mermaid
 flowchart TD
     subgraph DockerCompose["Docker Compose (profiles)"]
