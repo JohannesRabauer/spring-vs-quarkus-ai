@@ -15,12 +15,12 @@ docker compose --profile quarkus up
 flowchart TD
     subgraph DockerCompose["Docker Compose (profiles)"]
         subgraph Frontend["Frontend"]
-            Spring["Vaadin App"]
+            Vaadin["Vaadin App"]
         end
 
         subgraph Backend["Backend (choose profile)"]
             Spring["Spring + Spring AI"]
-            Quarkus["Quarkus + LangChain4j"]
+            Quarkus["Quarkus + LangChain4J"]
         end
 
         subgraph Ollama["Ollama Container"]
@@ -29,8 +29,8 @@ flowchart TD
     end
 
     %% Connections
-    NextJS -->|REST Endpoints| Spring
-    NextJS -->|REST Endpoints| Quarkus
+    Vaadin -->|REST Endpoints| Spring
+    Vaadin -->|REST Endpoints| Quarkus
 
     Spring -->|Requests| Llama
     Quarkus -->|Requests| Llama
