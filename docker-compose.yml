@@ -22,7 +22,7 @@ services:
     profiles: [ "quarkus" ]
     build:
       context: ./backend-quarkus/
-    container_name: backend-quarkus-svq
+    container_name: backend
     depends_on:
       - ollama
     environment:
@@ -35,7 +35,7 @@ services:
     profiles: [ "spring" ]
     build:
       context: ./backend-spring/
-    container_name: backend-spring-svq
+    container_name: backend
     depends_on:
       - ollama
     environment:
@@ -48,5 +48,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: frontend-svq
+    environment:
+      - BACKEND_URL=http://backend:8080
     ports:
       - "8081:8081"

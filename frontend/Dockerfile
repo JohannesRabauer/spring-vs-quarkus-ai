@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.4
 # Stage 1: Build the Spring Boot application
 FROM maven:3.9.11-eclipse-temurin-25 AS build
 
@@ -6,10 +7,14 @@ WORKDIR /app
 
 # Copy Maven project files
 COPY pom.xml .
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn dependency:go-offline
+
 COPY src ./src
 
 # Package the application (skip tests for faster builds)
-RUN mvn clean package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn clean package -DskipTests -Pproduction
 
 # Stage 2: Run the Spring Boot application
 FROM eclipse-temurin:25_36-jre-alpine

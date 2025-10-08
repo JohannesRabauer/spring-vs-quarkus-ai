@@ -9,10 +9,14 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.router.Route;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.client.RestClient;
 
 @Route("")
 public class MainView extends VerticalLayout {
+
+    @Value("${backend.url}")
+    private String backendUrl;
 
     public MainView() {
         setSizeFull();
@@ -84,7 +88,7 @@ public class MainView extends VerticalLayout {
     private RestClient buildRestClient() {
         return RestClient
                 .builder()
-                .baseUrl("http://localhost:8080")
+                .baseUrl(backendUrl)
                 .build();
     }
 
