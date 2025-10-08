@@ -9,6 +9,8 @@ services:
       - ./ollama/init:/init
     environment:
       - OLLAMA_KEEP_ALIVE=-1
+      # Actually shows you the input prompts and responses in the logs
+      - OLLAMA_DEBUG=2
     deploy:
       resources:
         reservations:
