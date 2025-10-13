@@ -41,7 +41,8 @@ services:
     depends_on:
       - ollama
     environment:
-      - OLLAMA_HOST=http://ollama-svq:11434
+      - SPRING_AI_OLLAMA_MODEL=llama3.2:1b
+      - SPRING_AI_OLLAMA_BASE-URL=http://ollama-svq:11434
     ports:
       - "8080:8080"
 
