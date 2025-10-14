@@ -10,11 +10,8 @@ public class ConversionService {
 
     private final ChatClient chatClient;
 
-    public ConversionService(ChatClient.Builder chatClientBuilder,
-                             @Value("${spring.ai.ollama.model}") String ollamaModel) {
-        this.chatClient = chatClientBuilder
-                .defaultOptions(ChatOptions.builder().model(ollamaModel).build())
-                .build();
+    public ConversionService(ChatClient.Builder chatClientBuilder) {
+        this.chatClient = chatClientBuilder.build();
     }
 
     public String chatSimple(String prompt) {
