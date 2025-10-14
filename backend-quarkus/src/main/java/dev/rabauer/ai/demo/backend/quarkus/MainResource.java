@@ -1,9 +1,10 @@
 package dev.rabauer.ai.demo.backend.quarkus;
 
+import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 
 @Path("/")
 public class MainResource {
@@ -16,13 +17,17 @@ public class MainResource {
 
     @POST
     @Path("/chat")
-    public String chat(String request) {
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    public Multi<String> chat(String request) {
         return conversionService.chatSimple(request);
     }
 
     @POST
     @Path("/translate/{targetLanguage}")
-    public String translate(@PathParam("targetLanguage") String targetLanguage, String textToTranslate) {
+    @Consumes(MediaType.TEXT_PLAIN)
+    @Produces(MediaType.TEXT_PLAIN)
+    public Multi<String> translate(@PathParam("targetLanguage") String targetLanguage, String textToTranslate) {
         return translatingService.translate(targetLanguage, textToTranslate);
     }
 }

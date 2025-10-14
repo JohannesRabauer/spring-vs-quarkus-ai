@@ -1,6 +1,7 @@
 package dev.rabauer.ai.demo.frontend;
 
 import com.vaadin.flow.component.Key;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -10,7 +11,9 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.client.RestClient;
+import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 
 @Route("")
 public class MainView extends VerticalLayout {
@@ -39,9 +42,15 @@ public class MainView extends VerticalLayout {
         chatResponse.setWidthFull();
         chatResponse.setHeight("100%");
         chatResponse.setReadOnly(true);
+        final UI ui = UI.getCurrent();
         Button chatButton = new Button("Send", e -> {
-            chatResponse.setValue(chat(chatInput.getValue()));
-        });
+            chatResponse.clear();
+            chat(chatInput.getValue())
+                    .subscribe(
+                            token -> ui.access(() -> chatResponse.setValue(chatResponse.getValue() + token))
+                    );
+        }
+        );
         chatButton.setWidthFull();
         chatInput.addKeyPressListener(Key.ENTER, e -> chatButton.click());
 
@@ -68,10 +77,13 @@ public class MainView extends VerticalLayout {
         translateResponse.setHeight("100%");
         translateResponse.setReadOnly(true);
         Button translateButton = new Button("Translate", e -> {
-            translateResponse.setValue(
-                    translate(translateLanguage.getValue(), translateInput.getValue())
-            );
-        });
+            translateResponse.clear();
+            translate(translateLanguage.getValue(), translateInput.getValue())
+                    .subscribe(
+                            token -> ui.access(() -> translateResponse.setValue(translateResponse.getValue() + token))
+                    );
+        }
+        );
         translateButton.setWidthFull();
         translateInput.addKeyPressListener(Key.ENTER, e -> translateButton.click());
 
@@ -85,29 +97,33 @@ public class MainView extends VerticalLayout {
         add(splitLayout);
     }
 
-    private RestClient buildRestClient() {
-        return RestClient
+    private WebClient buildRestClient() {
+        return WebClient
                 .builder()
                 .baseUrl(backendUrl)
                 .build();
     }
 
-    private String translate(String languageToTranslateTo, String textToTranslate) {
+    private Flux<String> translate(String languageToTranslateTo, String textToTranslate) {
         return buildRestClient()
                 .post()
                 .uri("/translate/" + languageToTranslateTo)
-                .body(textToTranslate)
+                .contentType(MediaType.TEXT_PLAIN)
+                .bodyValue(textToTranslate)
+                .accept(MediaType.TEXT_PLAIN)
                 .retrieve()
-                .body(String.class);
+                .bodyToFlux(String.class);
     }
 
 
-    private String chat(String chatMessage) {
+    private Flux<String> chat(String chatMessage) {
         return buildRestClient()
                 .post()
                 .uri("/chat")
-                .body(chatMessage)
+                .contentType(MediaType.TEXT_PLAIN)
+                .bodyValue(chatMessage)
+                .accept(MediaType.TEXT_PLAIN)
                 .retrieve()
-                .body(String.class);
+                .bodyToFlux(String.class);
     }
 }
