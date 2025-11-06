@@ -1,25 +1,49 @@
 package dev.rabauer.ai.demo.frontend;
 
+import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.grid.ColumnTextAlign;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
+import dev.rabauer.ai.demo.frontend.db.UserComplaint;
+import dev.rabauer.ai.demo.frontend.db.UserComplaintRepository;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
 @Route("")
 public class MainView extends VerticalLayout {
 
+    @Autowired
+    UserComplaintRepository userComplaintRepository;
+
     @Value("${backend.url}")
     private String backendUrl;
+
+    private ScheduledExecutorService executor;
+    private ScheduledFuture<?> task;
+    private Grid<UserComplaint> userComplaintGrid = new Grid<>(UserComplaint.class, false);
+    private final static DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     public MainView() {
         setSizeFull();
@@ -29,7 +53,19 @@ public class MainView extends VerticalLayout {
         splitLayout.setSizeFull();
         splitLayout.setSplitterPosition(50); // initial 50/50 split
 
-        // Left side: Chat panel
+        // Add both layouts to the SplitLayout
+        splitLayout.addToPrimary(getChatLayout());
+        splitLayout.addToSecondary(getLogLayout());
+
+        // Add SplitLayout to main view
+        add(splitLayout);
+
+        addAttachListener(e -> startUpdating());
+        addDetachListener(e -> stopUpdating());
+    }
+
+    @NotNull
+    private VerticalLayout getChatLayout() {
         VerticalLayout chatLayout = new VerticalLayout();
         chatLayout.setSizeFull();
         chatLayout.setPadding(true);
@@ -55,46 +91,57 @@ public class MainView extends VerticalLayout {
         chatInput.addKeyPressListener(Key.ENTER, e -> chatButton.click());
 
         chatLayout.add(chatTitle, chatInput, chatButton, chatResponse);
+        return chatLayout;
+    }
 
-        // Right side: Translate panel
-        VerticalLayout translateLayout = new VerticalLayout();
-        translateLayout.setSizeFull();
-        translateLayout.setPadding(true);
-        translateLayout.setSpacing(true);
+    @NotNull
+    private VerticalLayout getLogLayout() {
+        VerticalLayout logLayout = new VerticalLayout();
+        logLayout.setSizeFull();
+        logLayout.setPadding(true);
+        logLayout.setSpacing(true);
 
-        H2 translateTitle = new H2("Translate");
-        TextField translateLanguage = new TextField("Language to translate to", "German", "German");
-        translateLanguage.setWidthFull();
-        TextField translateInput = new TextField("Text to translate");
-        translateInput.setWidthFull();
-        HorizontalLayout horizontalTranslateLayout = new HorizontalLayout(translateLanguage, translateInput);
-        horizontalTranslateLayout.setSizeFull();
-        horizontalTranslateLayout.setPadding(false);
-        horizontalTranslateLayout.setSpacing(true);
-        horizontalTranslateLayout.setHeight("75px");
-        TextArea translateResponse = new TextArea("Translation");
-        translateResponse.setWidthFull();
-        translateResponse.setHeight("100%");
-        translateResponse.setReadOnly(true);
-        Button translateButton = new Button("Translate", e -> {
-            translateResponse.clear();
-            translate(translateLanguage.getValue(), translateInput.getValue())
-                    .subscribe(
-                            token -> ui.access(() -> translateResponse.setValue(translateResponse.getValue() + token))
-                    );
-        }
-        );
-        translateButton.setWidthFull();
-        translateInput.addKeyPressListener(Key.ENTER, e -> translateButton.click());
+        H2 logTitle = new H2("Logged Entries");
+        userComplaintGrid.addColumn(user -> formatTime(user))
+                .setHeader("Timestamp")
+                .setAutoWidth(true)
+                .setFlexGrow(0);
 
-        translateLayout.add(translateTitle, horizontalTranslateLayout, translateButton, translateResponse);
+        userComplaintGrid.addColumn(UserComplaint::getUsername)
+                .setHeader("Username")
+                .setAutoWidth(true)
+                .setResizable(true)
+                .setFlexGrow(0);
 
-        // Add both layouts to the SplitLayout
-        splitLayout.addToPrimary(chatLayout);
-        splitLayout.addToSecondary(translateLayout);
+        userComplaintGrid.addColumn(UserComplaint::getRequest)
+                .setHeader("Request")
+                .setAutoWidth(true)
+                .setFlexGrow(1);
 
-        // Add SplitLayout to main view
-        add(splitLayout);
+        userComplaintGrid.addColumn(new ComponentRenderer<>(complaint -> {
+                    int mood = Math.max(0, Math.min(100, complaint.getMood()));
+                    String color = "hsl(" + (120 - (mood * 1.2)) + ", 80%, 45%)"; // green to red
+                    String bar = """
+                <div style='width:100px;height:10px;background:#eee;border-radius:4px;overflow:hidden;'>
+                  <div style='width:%d%%;height:100%%;background:%s;'></div>
+                </div>
+            """.formatted(mood, color);
+                    return new Html(bar);
+                }))
+                .setHeader("Mood")
+                .setAutoWidth(true)
+                .setFlexGrow(0)
+                .setTextAlign(ColumnTextAlign.END);
+
+        userComplaintGrid.setSizeFull();
+
+        logLayout.add(logTitle, userComplaintGrid);
+        return logLayout;
+    }
+
+    @Nullable
+    private static Object formatTime(UserComplaint user) {
+        return user.getTimestamp() == null ? null : DATE_TIME_FORMATTER.format(user.getTimestamp().atZone(ZoneId.systemDefault()));
     }
 
     private WebClient buildRestClient() {
@@ -103,18 +150,6 @@ public class MainView extends VerticalLayout {
                 .baseUrl(backendUrl)
                 .build();
     }
-
-    private Flux<String> translate(String languageToTranslateTo, String textToTranslate) {
-        return buildRestClient()
-                .post()
-                .uri("/translate/" + languageToTranslateTo)
-                .contentType(MediaType.TEXT_PLAIN)
-                .bodyValue(textToTranslate)
-                .accept(MediaType.TEXT_PLAIN)
-                .retrieve()
-                .bodyToFlux(String.class);
-    }
-
 
     private Flux<String> chat(String chatMessage) {
         return buildRestClient()
@@ -125,5 +160,24 @@ public class MainView extends VerticalLayout {
                 .accept(MediaType.TEXT_PLAIN)
                 .retrieve()
                 .bodyToFlux(String.class);
+    }
+
+    private void startUpdating() {
+        if (executor == null || executor.isShutdown()) {
+            executor = Executors.newSingleThreadScheduledExecutor();
+        }
+        UI ui = getUI().orElse(null);
+        if (ui == null) return;
+
+        task = executor.scheduleAtFixedRate(() -> {
+            ui.access(() -> {
+               this.userComplaintGrid.setItems(this.userComplaintRepository.findAll());
+            });
+        }, 0, 2, TimeUnit.SECONDS);
+    }
+
+    private void stopUpdating() {
+        if (task != null) task.cancel(true);
+        if (executor != null) executor.shutdownNow();
     }
 }

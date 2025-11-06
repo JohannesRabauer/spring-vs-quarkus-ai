@@ -4,30 +4,21 @@ import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-import org.jboss.resteasy.reactive.RestStreamElementType;
 
 @Path("/")
 public class MainResource {
 
     @Inject
-    ConversionService conversionService;
-
+    CustomerServiceService customerServiceService;
     @Inject
-    TranslatingService translatingService;
+    ServiceDeskService serviceDeskService;
 
     @POST
     @Path("/chat")
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.TEXT_PLAIN)
     public Multi<String> chat(String request) {
-        return conversionService.chatSimple(request);
-    }
-
-    @POST
-    @Path("/translate/{targetLanguage}")
-    @Consumes(MediaType.TEXT_PLAIN)
-    @Produces(MediaType.TEXT_PLAIN)
-    public Multi<String> translate(@PathParam("targetLanguage") String targetLanguage, String textToTranslate) {
-        return translatingService.translate(targetLanguage, textToTranslate);
+        Thread.startVirtualThread(() ->  serviceDeskService.logComplaint(request));
+        return customerServiceService.chatSimple(request);
     }
 }
