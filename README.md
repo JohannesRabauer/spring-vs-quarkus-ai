@@ -37,12 +37,19 @@ flowchart TD
         subgraph Ollama["Ollama Container"]
             Llama["Llama3.2"]
         end
+
+        subgraph Database["Database"]
+            Postgres[(PostgreSQL)]
+        end
     end
 
     %% Connections
     Vaadin -->|REST Endpoints| Spring
     Vaadin -->|REST Endpoints| Quarkus
+    Vaadin -->|Read Data| Postgres
 
     Spring -->|Requests| Llama
+    Spring -->|Write Data| Postgres
     Quarkus -->|Requests| Llama
+    Quarkus -->|Write Data| Postgres
 ```
