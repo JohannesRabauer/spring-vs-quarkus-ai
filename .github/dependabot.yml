@@ -6,6 +6,14 @@
 version: 2
 updates:
   - package-ecosystem: "maven" # See documentation for possible values
-    directory: "/" # Location of package manifests
+    directory: "/backend-quarkus/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "maven" # See documentation for possible values
+    directory: "/backend-spring/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "maven" # See documentation for possible values
+    directory: "/frontend/" # Location of package manifests
     schedule:
       interval: "weekly"
