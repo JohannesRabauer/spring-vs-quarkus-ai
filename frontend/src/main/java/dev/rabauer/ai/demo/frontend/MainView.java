@@ -102,9 +102,10 @@ public class MainView extends VerticalLayout {
         logLayout.setSpacing(true);
 
         H2 logTitle = new H2("Logged Entries");
-        userComplaintGrid.addColumn(user -> formatTime(user))
+        userComplaintGrid.addColumn(MainView::formatTime)
                 .setHeader("Timestamp")
                 .setAutoWidth(true)
+                .setResizable(true)
                 .setFlexGrow(0);
 
         userComplaintGrid.addColumn(UserComplaint::getUsername)
@@ -115,6 +116,7 @@ public class MainView extends VerticalLayout {
 
         userComplaintGrid.addColumn(UserComplaint::getRequest)
                 .setHeader("Request")
+                .setResizable(true)
                 .setAutoWidth(true)
                 .setFlexGrow(1);
 
@@ -122,10 +124,10 @@ public class MainView extends VerticalLayout {
                     int mood = Math.max(0, Math.min(100, complaint.getMood()));
                     String color = "hsl(" + (120 - (mood * 1.2)) + ", 80%, 45%)"; // green to red
                     String bar = """
-                <div style='width:100px;height:10px;background:#eee;border-radius:4px;overflow:hidden;'>
-                  <div style='width:%d%%;height:100%%;background:%s;'></div>
-                </div>
-            """.formatted(mood, color);
+                                <div style='width:100px;height:10px;background:#eee;border-radius:4px;overflow:hidden;'>
+                                  <div style='width:%d%%;height:100%%;background:%s;'></div>
+                                </div>
+                            """.formatted(mood, color);
                     return new Html(bar);
                 }))
                 .setHeader("Mood")
@@ -141,7 +143,9 @@ public class MainView extends VerticalLayout {
 
     @Nullable
     private static Object formatTime(UserComplaint user) {
-        return user.getTimestamp() == null ? null : DATE_TIME_FORMATTER.format(user.getTimestamp().atZone(ZoneId.systemDefault()));
+        return user.getTimestamp() == null
+                ? null
+                : DATE_TIME_FORMATTER.format(user.getTimestamp().atZone(ZoneId.systemDefault()));
     }
 
     private WebClient buildRestClient() {
@@ -171,7 +175,7 @@ public class MainView extends VerticalLayout {
 
         task = executor.scheduleAtFixedRate(() -> {
             ui.access(() -> {
-               this.userComplaintGrid.setItems(this.userComplaintRepository.findAll());
+                this.userComplaintGrid.setItems(this.userComplaintRepository.findAll());
             });
         }, 0, 2, TimeUnit.SECONDS);
     }

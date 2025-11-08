@@ -3,8 +3,6 @@ package dev.rabauer.ai.demo.backend.spring;
 import dev.rabauer.ai.demo.backend.spring.db.UserComplaint;
 import dev.rabauer.ai.demo.backend.spring.db.UserComplaintRepository;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 
