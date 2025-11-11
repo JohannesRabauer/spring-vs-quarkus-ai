@@ -71,13 +71,6 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Comment on commit
-        if: always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { context } = require('@actions/github');
-            const commitSha = context.payload.after;
-            const pageUrl = '${{ steps.deployment.outputs.page_url }}';
-            
-            console.log(`✅ Documentation published to: ${pageUrl}`);
+      - name: Log deployment status
+        run: |
+          echo "✅ Documentation published to: ${{ steps.deployment.outputs.page_url }}"
