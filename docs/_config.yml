@@ -1,0 +1,38 @@
+# GitHub Pages Configuration
+
+This file configures how GitHub Pages displays the documentation.
+
+theme: jekyll-theme-cayman
+
+# Site Configuration
+title: Spring vs. Quarkus AI Demo
+description: Comprehensive documentation comparing Spring Boot and Quarkus frameworks with AI integration
+
+# GitHub Pages Settings
+show_downloads: true
+github:
+  repository_url: https://github.com/JohannesRabauer/spring-vs-quarkus-ai
+  is_project_page: true
+  is_user_page: false
+
+# Markdown Processor
+markdown: kramdown
+kramdown:
+  syntax_highlighter: rouge
+  input: GFM
+
+# Plugins
+plugins:
+  - jekyll-github-metadata
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# Exclude files
+exclude:
+  - .gitignore
+  - CNAME
+  - .github
+  - .git
+  - vendor
+  - Gemfile
+  - Gemfile.lock

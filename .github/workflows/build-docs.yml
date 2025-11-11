@@ -1,0 +1,113 @@
+name: Build and Test Documentation
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '.github/workflows/build-docs.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install AsciiDoctor
+        run: |
+          gem install asciidoctor
+          gem install asciidoctor-pdf
+          gem install rouge
+          gem install asciidoctor-diagram
+
+      - name: Validate AsciiDoc syntax
+        run: |
+          asciidoctor -v
+          for file in docs/*.adoc; do
+            echo "Validating $file..."
+            asciidoctor --dry-run "$file" || exit 1
+          done
+
+      - name: Build HTML Documentation
+        run: |
+          mkdir -p _site
+          asciidoctor \
+            -r asciidoctor-diagram \
+            -a icons=font \
+            -a source-highlighter=rouge \
+            -a toc=left \
+            -D _site \
+            docs/index.adoc
+
+      - name: Build PDF Documentation
+        run: |
+          asciidoctor-pdf \
+            -r asciidoctor-diagram \
+            -a icons=font \
+            -D _site \
+            docs/index.adoc
+
+      - name: Check output files
+        run: |
+          echo "Generated files:"
+          ls -lah _site/
+          
+          # Verify HTML file exists and has content
+          if [ ! -f _site/index.html ]; then
+            echo "❌ HTML file not generated!"
+            exit 1
+          fi
+          
+          if [ ! -s _site/index.html ]; then
+            echo "❌ HTML file is empty!"
+            exit 1
+          fi
+          
+          # Check file sizes
+          html_size=$(stat -f%z _site/index.html 2>/dev/null || stat --printf=%s _site/index.html)
+          echo "✅ HTML file size: $html_size bytes"
+          
+          if [ -f _site/index.pdf ]; then
+            pdf_size=$(stat -f%z _site/index.pdf 2>/dev/null || stat --printf=%s _site/index.pdf)
+            echo "✅ PDF file size: $pdf_size bytes"
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: _site/
+          retention-days: 5
+
+      - name: Report build status
+        if: always()
+        run: |
+          echo "## 📚 Documentation Build Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Status" >> $GITHUB_STEP_SUMMARY
+          if [ -f _site/index.html ] && [ -s _site/index.html ]; then
+            echo "✅ **HTML**: Generated successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **HTML**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ -f _site/index.pdf ] && [ -s _site/index.pdf ]; then
+            echo "✅ **PDF**: Generated successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **PDF**: Not generated" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Generated Files" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ls -lh _site/ >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

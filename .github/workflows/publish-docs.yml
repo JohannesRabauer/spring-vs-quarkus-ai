@@ -1,0 +1,113 @@
+name: Publish Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - '.github/workflows/publish-docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish Documentation to GitHub Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Ruby (for AsciiDoc)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install AsciiDoctor
+        run: |
+          gem install asciidoctor
+          gem install asciidoctor-pdf
+          gem install rouge
+
+      - name: Build HTML Documentation
+        run: |
+          mkdir -p _site
+          asciidoctor \
+            -r asciidoctor-diagram \
+            -a icons=font \
+            -a source-highlighter=rouge \
+            -a toc=left \
+            -D _site \
+            docs/index.adoc
+          ls -la _site/
+
+      - name: Create index.html redirect
+        run: |
+          cat > _site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Spring vs. Quarkus AI Demo - Documentation</title>
+            <meta http-equiv="refresh" content="0; URL=index.html" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+              .container { max-width: 1200px; margin: 0 auto; padding: 2rem; text-align: center; }
+              h1 { color: #333; }
+              p { color: #666; }
+              a { color: #0366d6; text-decoration: none; }
+              a:hover { text-decoration: underline; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>📚 Spring vs. Quarkus AI Demo</h1>
+              <p>Comprehensive Documentation</p>
+              <p><a href="index.html">→ View Full Documentation</a></p>
+            </div>
+            <script>
+              // Redirect to the actual documentation
+              window.location.href = 'index.html';
+            </script>
+          </body>
+          </html>
+          EOF
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Comment on commit
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { context } = require('@actions/github');
+            const commitSha = context.payload.after;
+            const pageUrl = '${{ steps.deployment.outputs.page_url }}';
+            
+            console.log(`✅ Documentation published to: ${pageUrl}`);

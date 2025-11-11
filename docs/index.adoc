@@ -1,0 +1,946 @@
+= Spring vs. Quarkus AI Demo
+Johannes Rabauer <johannes@rabauer.dev>
+v1.0.0, {docdate}
+:doctype: book
+:toc: left
+:toclevels: 3
+:icons: font
+:source-highlighter: rouge
+:xrefstyle: short
+:experimental:
+:stem: latexmath
+:sectnums:
+:sectlinks:
+:title-page:
+
+== Overview
+
+This is a comprehensive demonstration project comparing two modern Java frameworks: **Spring Boot** and **Quarkus**, integrated with AI capabilities through **Ollama** and language model integrations.
+
+=== Project Goals
+
+* Compare framework performance characteristics
+* Demonstrate AI/LLM integration patterns in Java
+* Showcase microservices architecture with Docker Compose
+* Provide a reference implementation for service desk automation with AI
+
+=== Key Technologies
+
+[cols="1,2,1"]
+|===
+| Component | Technology | Version
+
+| Spring Backend
+| Spring Boot 3.5.7 with Spring AI
+| 3.5.7 / 1.0.3
+
+| Quarkus Backend
+| Quarkus with LangChain4J
+| 3.29.2
+
+| Frontend
+| Spring Boot + Vaadin
+| 3.5.7 / 24.9.4
+
+| Database
+| PostgreSQL
+| 17
+
+| LLM
+| Ollama with Llama 3.2
+| Latest
+
+| Java Version
+| Spring & Frontend
+| 25
+
+| Java Version
+| Quarkus
+| 21
+
+|===
+
+== Architecture
+
+=== System Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Docker Compose                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌─────────────┐    ┌──────────────┐    ┌─────────────┐   │
+│  │  Frontend   │    │  Backend     │    │   Ollama    │   │
+│  │  (Vaadin)   │───▶│  (Spring OR  │───▶│  (Llama)    │   │
+│  │             │    │   Quarkus)   │    │             │   │
+│  │ :8081       │    │ :8080        │    │ :11434      │   │
+│  └──────┬──────┘    └──────┬───────┘    └─────────────┘   │
+│         │                  │                               │
+│         └──────────────────┴──────────────────┐            │
+│                                               │            │
+│                                        ┌──────▼──────┐     │
+│                                        │ PostgreSQL  │     │
+│                                        │   :15432    │     │
+│                                        └─────────────┘     │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+=== Component Details
+
+==== Frontend (Vaadin)
+* Web-based UI framework built on Spring Boot
+* RESTful client for backend communication
+* Direct PostgreSQL access for complaint data
+* Accessible at http://localhost:8081
+
+==== Backend Layer
+Available in two implementations:
+
+===== Spring Backend
+* Spring Boot 3.5.7
+* Spring AI for LLM integration
+* Spring Data JPA for database access
+* RESTful API endpoints
+* Automatic Ollama model: `llama3.2:1b`
+
+===== Quarkus Backend
+* Quarkus 3.29.2
+* LangChain4J for LLM orchestration
+* Hibernate ORM with Panache
+* SmallRye REST for API
+* Same LLM integration
+
+[NOTE]
+Both backends expose identical REST endpoints and can be used interchangeably.
+
+==== Database Layer
+* PostgreSQL 17
+* Database: `spring-vs-quarkus`
+* Port: 15432 (mapped from 5432)
+* Credentials: `dbuser` / `not-secure` (dev only)
+
+==== LLM Layer
+* Ollama container for local LLM execution
+* Default model: Llama 3.2 (1B parameter)
+* GPU support via NVIDIA Docker
+* Keep-alive: -1 (model stays in memory)
+* Debug logging enabled for prompt/response inspection
+
+== Getting Started
+
+=== Prerequisites
+
+* Docker and Docker Compose
+* (Optional) NVIDIA GPU with Docker GPU support
+* 8GB RAM minimum (4GB if no GPU)
+
+=== Installation & Setup
+
+==== Clone the Repository
+
+[source,bash]
+----
+git clone https://github.com/JohannesRabauer/spring-vs-quarkus-ai.git
+cd spring-vs-quarkus-ai
+----
+
+==== Start with Spring Backend
+
+[source,bash]
+----
+docker compose --profile spring up
+----
+
+==== Start with Quarkus Backend
+
+[source,bash]
+----
+docker compose --profile quarkus up
+----
+
+==== Initial Setup
+
+. Wait for all services to be healthy (check logs)
+. Access frontend at http://localhost:8081
+. First request may take 30-60 seconds (LLM model loading)
+
+=== Service Endpoints
+
+[cols="1,2,1"]
+|===
+| Service | URL | Profile
+
+| Frontend
+| http://localhost:8081
+| All
+
+| Spring Backend
+| http://localhost:8080
+| spring
+
+| Quarkus Backend
+| http://localhost:8080
+| quarkus
+
+| Ollama
+| http://localhost:11434
+| All
+
+| PostgreSQL
+| localhost:15432
+| All
+
+|===
+
+== Project Structure
+
+=== Directory Layout
+
+[source,tree]
+----
+spring-vs-quarkus-ai/
+├── README.md                           # Quick start guide
+├── docker-compose.yml                  # Docker Compose configuration
+├── docs/
+│   └── index.adoc                     # This documentation
+├── backend-spring/                     # Spring Boot backend
+│   ├── src/main/java/                 # Spring backend source code
+│   ├── src/main/resources/            # Configuration files
+│   ├── pom.xml                        # Maven configuration
+│   ├── Dockerfile                     # Container definition
+│   └── mvnw                           # Maven wrapper
+├── backend-quarkus/                    # Quarkus backend
+│   ├── src/main/java/                 # Quarkus backend source code
+│   ├── src/main/resources/            # Configuration files
+│   ├── src/main/docker/               # Container variants
+│   ├── pom.xml                        # Maven configuration
+│   ├── Dockerfile                     # Container definition
+│   └── mvnw                           # Maven wrapper
+├── frontend/                           # Vaadin frontend
+│   ├── src/main/java/                 # Frontend source code
+│   ├── src/main/frontend/             # Vaadin components
+│   ├── src/main/resources/            # Static content
+│   ├── pom.xml                        # Maven configuration
+│   ├── Dockerfile                     # Container definition
+│   └── mvnw                           # Maven wrapper
+├── ollama/
+│   ├── data/                          # Model storage
+│   └── init/run_ollama.sh            # Model initialization script
+├── db/
+│   └── data/                          # PostgreSQL volume
+└── .github/
+    └── workflows/                     # GitHub Actions workflows
+        └── publish-docs.yml           # Documentation publishing
+----
+
+== Backend Implementation
+
+=== Core Services
+
+==== CustomerServiceService
+Service for managing customer service operations and AI-powered responses.
+
+[source,java]
+----
+public interface CustomerServiceService {
+    String processComplaint(String complaint);
+    List<Complaint> getAllComplaints();
+    void saveComplaint(Complaint complaint);
+}
+----
+
+==== ServiceDeskService
+Orchestrates LLM integration for intelligent service desk operations.
+
+* Handles LLM prompt engineering
+* Manages conversation context
+* Processes tool invocations
+* Logs operations for analysis
+
+==== LoggingTool
+Provides structured logging capabilities accessible to the LLM.
+
+[source,java]
+----
+@JsonTypeName("logging_tool")
+public class LoggingTool implements Tool {
+    void log(String message, String level);
+}
+----
+
+=== Database Schema
+
+==== UserComplaint Entity
+
+[source,sql]
+----
+CREATE TABLE user_complaint (
+    id BIGSERIAL PRIMARY KEY,
+    customer_name VARCHAR(255),
+    complaint_text TEXT,
+    ai_response TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+----
+
+Key fields:
+* `id`: Unique identifier (auto-increment)
+* `customer_name`: Customer identification
+* `complaint_text`: Original complaint
+* `ai_response`: AI-generated response
+* `created_at`, `updated_at`: Audit timestamps
+
+=== REST API
+
+==== Common Endpoints (Both Backends)
+
+===== Process Complaint
+[source,http]
+----
+POST /api/complaint/process
+Content-Type: application/json
+
+{
+    "customerName": "John Doe",
+    "complaintText": "The product stopped working after 2 weeks"
+}
+
+Response:
+{
+    "id": 1,
+    "customerName": "John Doe",
+    "complaintText": "...",
+    "aiResponse": "I'm sorry to hear your product isn't working...",
+    "createdAt": "2024-11-11T10:30:00Z"
+}
+----
+
+===== Get All Complaints
+[source,http]
+----
+GET /api/complaint/all
+
+Response:
+[
+    { /* complaint 1 */ },
+    { /* complaint 2 */ }
+]
+----
+
+== Frontend Implementation
+
+=== Vaadin UI
+
+The frontend is built with Vaadin, a Java web framework providing:
+
+* Component-based UI development
+* Type-safe server-side Java code
+* Automatic client-server communication
+* Responsive mobile-friendly design
+
+=== MainView Components
+
+==== Complaint Form
+* Text input for customer name
+* Text area for complaint text
+* Submit button
+* Loading indicator during processing
+
+==== Response Display
+* AI-generated response presentation
+* Complaint history table
+* Pagination support
+
+== Deployment
+
+=== Docker Compose Configuration
+
+The project uses Docker Compose with profiles to manage different deployment scenarios.
+
+==== Profile: spring
+Deploys the Spring Boot backend:
+
+[source,yaml]
+----
+backend-spring:
+    profiles: [ "spring" ]
+    build:
+        context: ./backend-spring/
+    container_name: backend
+    environment:
+        - SPRING_AI_OLLAMA_MODEL=llama3.2:1b
+        - SPRING_AI_OLLAMA_BASE-URL=http://ollama:11434
+        - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/spring-vs-quarkus
+----
+
+==== Profile: quarkus
+Deploys the Quarkus backend:
+
+[source,yaml]
+----
+backend-quarkus:
+    profiles: [ "quarkus" ]
+    build:
+        context: ./backend-quarkus/
+    container_name: backend
+    environment:
+        - QUARKUS_LANGCHAIN4J_OLLAMA_BASE-URL=http://ollama:11434
+        - QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://db:5432/spring-vs-quarkus
+----
+
+=== Container Images
+
+Each component has a Dockerfile optimized for its framework:
+
+==== Spring Backend Dockerfile
+* Multi-stage build
+* JVM runtime optimization
+* Spring Boot layer caching
+
+==== Quarkus Backend Dockerfiles
+* `Dockerfile.jvm`: Traditional JVM mode
+* `Dockerfile.native`: GraalVM native image (fastest startup)
+* `Dockerfile.legacy-jar`: Legacy JAR format
+* `Dockerfile.native-micro`: Minimal native image
+
+==== Frontend Dockerfile
+* Node.js build stage
+* Maven compilation stage
+* Vaadin production optimization
+
+== Configuration
+
+=== Environment Variables
+
+==== Ollama Configuration
+[cols="1,2,1"]
+|===
+| Variable | Purpose | Default
+
+| OLLAMA_KEEP_ALIVE
+| Model memory retention time (-1 = forever)
+| -1
+
+| OLLAMA_DEBUG
+| Debug logging level
+| 2
+
+| OLLAMA_HOST
+| Backend access URL
+| http://ollama:11434
+
+|===
+
+==== Spring Configuration
+[cols="1,2"]
+|===
+| Property | Purpose
+
+| spring.ai.ollama.model
+| Model name to use
+
+| spring.ai.ollama.base-url
+| Ollama service URL
+
+| spring.datasource.url
+| PostgreSQL connection URL
+
+| spring.datasource.username
+| Database user
+
+| spring.datasource.password
+| Database password
+
+|===
+
+==== Quarkus Configuration
+[cols="1,2"]
+|===
+| Property | Purpose
+
+| quarkus.langchain4j.ollama.base-url
+| Ollama service URL
+
+| quarkus.datasource.jdbc.url
+| PostgreSQL connection URL
+
+| quarkus.datasource.username
+| Database user
+
+| quarkus.datasource.password
+| Database password
+
+|===
+
+== Development
+
+=== Building Locally
+
+Each module uses Maven with wrapper scripts:
+
+==== Backend Spring
+[source,bash]
+----
+cd backend-spring
+./mvnw clean package
+./mvnw spring-boot:run
+----
+
+==== Backend Quarkus
+[source,bash]
+----
+cd backend-quarkus
+./mvnw clean package
+./mvnw quarkus:dev
+----
+
+==== Frontend
+[source,bash]
+----
+cd frontend
+./mvnw clean package
+./mvnw spring-boot:run
+----
+
+=== Running Tests
+
+[source,bash]
+----
+mvn clean test
+----
+
+Tests are located in `src/test/java` directories.
+
+=== IDE Setup
+
+==== IntelliJ IDEA
+. File → Open → Select project root
+. Maven projects auto-detected
+. Configure JDK to version 25 (Spring/Frontend) or 21 (Quarkus)
+
+==== VS Code
+. Install Extension Pack for Java
+. Install Maven for Java extension
+. Open project folder
+
+== Performance Comparison
+
+=== Startup Time
+
+[cols="1,1,1"]
+|===
+| Framework | JVM Mode | Native Image
+
+| Spring Boot
+| 2-3 seconds
+| N/A (not tested)
+
+| Quarkus
+| 1-2 seconds
+| < 100ms
+
+|===
+
+=== Memory Footprint
+
+[cols="1,1"]
+|===
+| Framework | Baseline (no requests)
+
+| Spring Boot
+| ~200-300 MB
+
+| Quarkus
+| ~150-200 MB
+
+|===
+
+=== First Request Latency
+
+Both backends require ~30-60 seconds for the first LLM request due to model loading.
+
+== Troubleshooting
+
+=== Common Issues
+
+==== Services Won't Start
+Check Docker daemon is running:
+[source,bash]
+----
+docker ps
+----
+
+==== Database Connection Error
+Verify PostgreSQL is healthy:
+[source,bash]
+----
+docker compose ps
+docker compose logs db
+----
+
+==== Ollama Model Not Loading
+Check Ollama logs and available disk space:
+[source,bash]
+----
+docker compose logs ollama
+df -h  # Check disk space
+----
+
+==== Frontend Can't Connect to Backend
+Verify backend service is running:
+[source,bash]
+----
+curl http://localhost:8080/api/health
+----
+
+==== High Memory Usage
+Reduce model size by updating environment:
+[source,yaml]
+----
+SPRING_AI_OLLAMA_MODEL=tinyllama:1b  # Smaller model
+----
+
+== Performance Tuning
+
+=== Ollama Optimization
+
+==== GPU Acceleration
+Enable in docker-compose.yml:
+[source,yaml]
+----
+deploy:
+    resources:
+        reservations:
+            devices:
+                - driver: nvidia
+                  count: 1
+                  capabilities: [ gpu ]
+----
+
+==== Model Selection
+Available models (download on first use):
+* `tinyllama:1b` - Smallest, fastest
+* `llama3.2:1b` - Default, balanced
+* `llama3.2:3b` - Larger, slower
+* `llama3.2` (7b default) - Most capable
+
+==== Context Window
+Adjust in service implementation:
+[source,java]
+----
+// Smaller context for faster responses
+int maxTokens = 256;
+----
+
+=== Database Optimization
+
+==== Connection Pooling
+Spring Boot defaults:
+[source,properties]
+----
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=2
+----
+
+Quarkus configuration:
+[source,properties]
+----
+quarkus.datasource.jdbc.max-size=10
+quarkus.datasource.jdbc.min-size=2
+----
+
+==== Query Optimization
+Add indexes for frequently queried fields:
+[source,sql]
+----
+CREATE INDEX idx_complaint_customer ON user_complaint(customer_name);
+CREATE INDEX idx_complaint_created ON user_complaint(created_at);
+----
+
+== Security Considerations
+
+[WARNING]
+This is a development/demo project. The following should NOT be used in production:
+
+* Default credentials: `dbuser` / `not-secure`
+* No HTTPS/TLS encryption
+* No authentication/authorization
+* Debug logging enabled
+* Database accessible without auth
+
+=== Production Hardening Checklist
+
+* [ ] Enable PostgreSQL authentication
+* [ ] Configure HTTPS with valid certificates
+* [ ] Implement API authentication (JWT/OAuth2)
+* [ ] Enable request rate limiting
+* [ ] Configure proper logging levels
+* [ ] Set up monitoring and alerts
+* [ ] Use secrets management (HashiCorp Vault, AWS Secrets Manager)
+* [ ] Enable CORS properly
+* [ ] Implement input validation
+* [ ] Set up database backups
+* [ ] Configure resource limits
+* [ ] Enable security headers
+
+== Integration Guide
+
+=== Adding New Services
+
+To add a new backend service (e.g., recommendation engine):
+
+. Create new module: `backend-<service>/`
+. Add to docker-compose.yml
+. Configure networking
+. Update frontend endpoints
+
+=== Adding LLM Tools
+
+Extend the LLM capabilities by adding new tools:
+
+[source,java]
+----
+@JsonTypeName("custom_tool")
+public class CustomTool implements Tool {
+    @Override
+    public String execute(String input) {
+        // Implementation
+        return "result";
+    }
+}
+----
+
+Register in ServiceDeskService:
+[source,java]
+----
+tools.add(new CustomTool());
+----
+
+=== Database Migrations
+
+Use Flyway or Liquibase for migrations:
+
+[source,sql]
+----
+-- src/main/resources/db/migration/V1__Initial_schema.sql
+CREATE TABLE ...
+----
+
+== Monitoring & Logging
+
+=== Docker Logs
+
+View service logs:
+[source,bash]
+----
+docker compose logs -f backend
+docker compose logs -f ollama
+docker compose logs -f frontend
+----
+
+=== Ollama Debug Output
+
+Ollama with debug enabled (OLLAMA_DEBUG=2) shows:
+* Input prompts
+* LLM responses
+* Token counts
+* Timing information
+
+=== Application Logs
+
+Spring Boot logs:
+[source,properties]
+----
+logging.level.root=INFO
+logging.level.org.springframework=DEBUG
+----
+
+Quarkus logs:
+[source,properties]
+----
+quarkus.log.level=INFO
+quarkus.log.category."dev.rabauer".level=DEBUG
+----
+
+== GitHub Actions CI/CD
+
+This project includes automated documentation publishing via GitHub Actions.
+
+=== Workflow: Publish Documentation
+
+The workflow runs on every push to main:
+
+. Builds the project
+. Generates AsciiDoc
+. Publishes to GitHub Pages
+. Updates index.html
+
+Configuration: `.github/workflows/publish-docs.yml`
+
+[source,yaml]
+----
+name: Publish Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - '.github/workflows/publish-docs.yml'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docs
+        uses: asciidoctor/setup-asciidoctor@v2
+      - name: Generate HTML
+        run: asciidoctor docs/index.adoc -o docs/index.html
+      - name: Deploy to Pages
+        uses: peaceiris/actions-gh-pages@v3
+----
+
+=== GitHub Pages Configuration
+
+Enable in repository settings:
+. Go to Settings → Pages
+. Set Source to `Deploy from a branch`
+. Select branch: `gh-pages`
+. Select directory: `/ (root)`
+
+Documentation URL: `https://JohannesRabauer.github.io/spring-vs-quarkus-ai/`
+
+== References & Resources
+
+=== Official Documentation
+
+* https://spring.io/projects/spring-ai[Spring AI]
+* https://quarkus.io[Quarkus Framework]
+* https://vaadin.com[Vaadin]
+* https://www.ollama.ai[Ollama]
+* https://www.postgresql.org[PostgreSQL]
+* https://langchain4j.github.io[LangChain4J]
+
+=== Quick Start Generators
+
+* Spring Initializer: https://start.spring.io[start.spring.io]
+* Quarkus Code: https://code.quarkus.io[code.quarkus.io]
+
+=== Repository Structure
+
+* GitHub: https://github.com/JohannesRabauer/spring-vs-quarkus-ai[spring-vs-quarkus-ai]
+
+== Contributing
+
+Contributions are welcome! Please:
+
+. Fork the repository
+. Create a feature branch
+. Make your changes
+. Submit a pull request
+
+== License
+
+This project is provided as-is for educational and demonstration purposes.
+
+== Support
+
+For issues, questions, or suggestions:
+
+. Check existing GitHub Issues
+. Review this documentation
+. Create a new GitHub Issue with details
+
+== Appendix: Quick Commands
+
+=== Docker Compose Commands
+
+[source,bash]
+----
+# Start Spring backend
+docker compose --profile spring up -d
+
+# Start Quarkus backend
+docker compose --profile quarkus up -d
+
+# Stop all services
+docker compose down
+
+# View logs
+docker compose logs -f
+
+# Rebuild images
+docker compose build --no-cache
+
+# Clean up volumes
+docker compose down -v
+----
+
+=== Maven Commands
+
+[source,bash]
+----
+# Clean and build
+mvn clean install
+
+# Run tests
+mvn test
+
+# Run application
+mvn spring-boot:run  # Spring
+mvn quarkus:dev      # Quarkus
+
+# Build Docker image
+mvn package dockerfile:build
+----
+
+=== PostgreSQL Commands
+
+[source,bash]
+----
+# Connect to database
+psql -h localhost -p 15432 -U dbuser -d spring-vs-quarkus
+
+# View complaints
+SELECT * FROM user_complaint;
+
+# Count complaints
+SELECT COUNT(*) FROM user_complaint;
+----
+
+=== Curl Examples
+
+[source,bash]
+----
+# Process complaint
+curl -X POST http://localhost:8080/api/complaint/process \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerName": "Alice",
+    "complaintText": "Product quality is poor"
+  }'
+
+# Get all complaints
+curl http://localhost:8080/api/complaint/all
+
+# Check backend health
+curl http://localhost:8080/actuator/health
+----
+
+== Document Information
+
+[cols="1,2"]
+|===
+| Version | 1.0.0
+| Last Updated | {docdate}
+| Author | Johannes Rabauer
+| Framework | AsciiDoc
+| Generated | {doctime}
+|===
+
+---
+_This documentation is automatically generated and published via GitHub Actions._

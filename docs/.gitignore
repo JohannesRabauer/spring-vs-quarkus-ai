@@ -1,0 +1,25 @@
+# Build artifacts
+*.html
+*.pdf
+*.epub
+_site/
+.asciidoctor/
+
+# Ruby/Bundler
+Gemfile.lock
+.bundle/
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build cache
+.cache/
