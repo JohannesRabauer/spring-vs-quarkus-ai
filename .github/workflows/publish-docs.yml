@@ -36,19 +36,22 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
-          bundler-cache: true
+          bundler-cache: false
+          working-directory: 'docs'
 
-      - name: Install AsciiDoctor
+      - name: Install AsciiDoctor and dependencies
         run: |
           gem install asciidoctor
           gem install asciidoctor-pdf
+          gem install asciidoctor-diagram
           gem install rouge
+          gem install prawn-table
+          gem install prawn-svg
 
       - name: Build HTML Documentation
         run: |
           mkdir -p _site
           asciidoctor \
-            -r asciidoctor-diagram \
             -a icons=font \
             -a source-highlighter=rouge \
             -a toc=left \
