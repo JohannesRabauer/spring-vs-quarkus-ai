@@ -20,6 +20,8 @@ docker compose --profile quarkus up
 
 After starting up the frontend is available at [http://localhost:8081](http://localhost:8081).
 
+![Screenshot](docs/Screenshot_Frontend.png)
+
 ## Architecture 
 
 ```mermaid
